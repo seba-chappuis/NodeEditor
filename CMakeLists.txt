@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.2)
+# version 3.4 is required as other do not work with C++14 and clang
 
 project(NodeEditor CXX)
 
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
-set(OpenGL_GL_PREFERENCE LEGACY)
 
 get_directory_property(_has_parent PARENT_DIRECTORY)
 if(_has_parent)
@@ -24,6 +24,9 @@ option(NE_FORCE_TEST_COLOR "Force colorized unit test output" OFF)
 enable_testing()
 
 if(NE_DEVELOPER_DEFAULTS)
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
@@ -35,32 +38,14 @@ endif()
 
 add_subdirectory(external)
 
-
 # Find the QtWidgets library
-find_package(Qt6
-  COMPONENTS
-   Core
-   Widgets
-   Gui
-   OpenGL
-)
+find_package(Qt5 5.10 COMPONENTS
+             Core
+             Widgets
+             Gui
+             OpenGL)
 
-if (NOT Qt6_FOUND)
-  find_package(Qt5 5.15
-    COMPONENTS
-     Core
-     Widgets
-     Gui
-     OpenGL
-  )
-endif()
-
-if (NOT (Qt6_FOUND OR Qt5_FOUND))
-  message(FATAL_ERRROR "Qt libraries were not found.")
-endif()
-
-
-qt_add_resources(RESOURCES ./resources/resources.qrc)
+qt5_add_resources(RESOURCES ./resources/resources.qrc)
 
 # Unfortunately, as we have a split include/src, AUTOMOC doesn't work.
 # We'll have to manually specify some files
@@ -109,14 +94,15 @@ target_include_directories(nodes
 
 target_link_libraries(nodes
   PUBLIC
-    Qt::Core
-    Qt::Widgets
-    Qt::Gui
-    Qt::OpenGL
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::Gui
+    Qt5::OpenGL
 )
 
 target_compile_definitions(nodes
   PUBLIC
+    ${Qt5Widgets_DEFINITIONS}
     NODE_EDITOR_SHARED
   PRIVATE
     NODE_EDITOR_EXPORTS
@@ -128,19 +114,13 @@ target_compile_options(nodes
   PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4127 /EHsc>
     $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
+    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra>
 )
-if(NOT "${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
-  # Clang-Cl on MSVC identifies as "Clang" but behaves more like MSVC:
-  target_compile_options(nodes
-    PRIVATE
-      $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra>
-  )
-endif()
 
-if(NE_DEVELOPER_DEFAULTS)
-  target_compile_features(nodes PUBLIC cxx_std_14)
-  set_target_properties(nodes PROPERTIES CXX_EXTENSIONS OFF)
-endif()
+target_compile_features(nodes
+  PUBLIC
+    cxx_generic_lambdas # Require C++14
+)
 
 set_target_properties(nodes
   PROPERTIES
@@ -155,7 +135,7 @@ set_target_properties(nodes
 
 file(GLOB_RECURSE HEADERS_TO_MOC include/nodes/internal/*.hpp)
 
-qt_wrap_cpp(nodes_moc
+qt5_wrap_cpp(nodes_moc
     ${HEADERS_TO_MOC}
   TARGET nodes
   OPTIONS --no-notes # Don't display a note for the headers which don't produce a moc_*.cpp

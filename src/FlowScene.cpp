@@ -164,10 +164,16 @@ restoreConnection(QJsonObject const &connectionJson)
     return TypeConverter{};
   };
 
-  std::shared_ptr<Connection> connection =
-    createConnection(*nodeIn, portIndexIn,
-                     *nodeOut, portIndexOut,
-                     getConverter());
+  std::shared_ptr<Connection> connection;
+  int const inSize = static_cast<int>(nodeIn->nodeState().getEntries(PortType::In).size());
+  int const outSize = static_cast<int>(nodeOut->nodeState().getEntries(PortType::Out).size());
+  if ((portIndexIn < inSize) && (portIndexOut < outSize))
+  {
+     connection =
+        createConnection(*nodeIn, portIndexIn,
+                         *nodeOut, portIndexOut,
+                         getConverter());
+  }
 
   // Note: the connectionCreated(...) signal has already been sent
   // by createConnection(...)
@@ -201,7 +207,9 @@ createNode(std::unique_ptr<NodeDataModel> && dataModel)
   auto nodePtr = node.get();
   _nodes[node->id()] = std::move(node);
 
-  nodeCreated(*nodePtr);
+  connect(nodePtr, &Node::connectionRemoved, this, &FlowScene::deleteConnection);
+
+  Q_EMIT nodeCreated(*nodePtr);
   return *nodePtr;
 }
 
@@ -227,8 +235,10 @@ restoreNode(QJsonObject const& nodeJson)
   auto nodePtr = node.get();
   _nodes[node->id()] = std::move(node);
 
-  nodePlaced(*nodePtr);
-  nodeCreated(*nodePtr);
+  connect(nodePtr, &Node::connectionRemoved, this, &FlowScene::deleteConnection);
+
+  Q_EMIT nodePlaced(*nodePtr);
+  Q_EMIT nodeCreated(*nodePtr);
   return *nodePtr;
 }
 
@@ -237,8 +247,7 @@ void
 FlowScene::
 removeNode(Node& node)
 {
-  // call signal
-  nodeDeleted(node);
+  Q_EMIT nodeDeleted(node);
 
   for (auto portType: {PortType::In, PortType::Out})
   {
@@ -251,6 +260,8 @@ removeNode(Node& node)
         deleteConnection(*pair.second);
     }
   }
+
+  disconnect(&node, &Node::connectionRemoved, this, &FlowScene::deleteConnection);
 
   _nodes.erase(node.id());
 }
@@ -708,11 +719,11 @@ sendConnectionCreatedToNodes(Connection const& c)
   Node* from = c.getNode(PortType::Out);
   Node* to   = c.getNode(PortType::In);
 
-  Q_ASSERT(from != nullptr);
-  Q_ASSERT(to != nullptr);
+  if(from)
+    from->nodeDataModel()->outputConnectionCreated(c);
 
-  from->nodeDataModel()->outputConnectionCreated(c);
-  to->nodeDataModel()->inputConnectionCreated(c);
+  if(to)
+    to->nodeDataModel()->inputConnectionCreated(c);
 }
 
 
@@ -723,11 +734,11 @@ sendConnectionDeletedToNodes(Connection const& c)
   Node* from = c.getNode(PortType::Out);
   Node* to   = c.getNode(PortType::In);
 
-  Q_ASSERT(from != nullptr);
-  Q_ASSERT(to != nullptr);
+  if(from)
+    from->nodeDataModel()->outputConnectionDeleted(c);
 
-  from->nodeDataModel()->outputConnectionDeleted(c);
-  to->nodeDataModel()->inputConnectionDeleted(c);
+  if(to)
+    to->nodeDataModel()->inputConnectionDeleted(c);
 }
 
 

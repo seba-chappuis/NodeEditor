@@ -538,6 +538,21 @@ QByteArray
 FlowScene::
 saveToMemory(QJsonDocument::JsonFormat format) const
 {
+  return QJsonDocument(saveToObject()).toJson(format);
+}
+
+void
+FlowScene::
+loadFromMemory(const QByteArray& data)
+{
+  const QJsonObject jsonDocument = QJsonDocument::fromJson(data).object();
+  loadFromMemory(jsonDocument);
+}
+
+QJsonObject
+FlowScene::
+saveToObject() const
+{
   QJsonObject sceneJson;
 
   QJsonArray nodesJsonArray;
@@ -564,20 +579,12 @@ saveToMemory(QJsonDocument::JsonFormat format) const
 
   sceneJson["connections"] = connectionJsonArray;
 
-  QJsonDocument document(sceneJson);
-
-  return document.toJson(format);
+  return sceneJson;
 }
 
 void
 FlowScene::
-loadFromMemory(const QByteArray& data)
-{
-  const QJsonObject jsonDocument = QJsonDocument::fromJson(data).object();
-  loadFromMemory(jsonDocument);
-}
-
-void FlowScene::loadFromMemory(const QJsonObject& data)
+loadFromObject(const QJsonObject& data)
 {
    QJsonArray nodesJsonArray = data["nodes"].toArray();
 
@@ -592,6 +599,11 @@ void FlowScene::loadFromMemory(const QJsonObject& data)
    {
       restoreConnection(connection.toObject());
    }
+}
+
+void FlowScene::loadFromMemory(const QJsonObject& data)
+{
+  loadFromObject(data);
 }
 
 QByteArray

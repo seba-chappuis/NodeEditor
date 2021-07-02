@@ -676,7 +676,7 @@ void FlowScene::pasteNodes(const QByteArray& data, const QPointF& pointOffset)
    {
       auto nodeJson = node.toObject();
 
-      QString oldId = nodeJson["id"].toString();
+      QUuid oldId = QUuid::fromString(nodeJson["id"].toString());
       if (!newIdsMap.contains(oldId))
          newIdsMap[oldId] = QUuid::createUuid();
 
@@ -697,11 +697,11 @@ void FlowScene::pasteNodes(const QByteArray& data, const QPointF& pointOffset)
    {
       auto connectionJson = connection.toObject();
 
-      QString oldId = connectionJson["in_id"].toString();
+      QUuid oldId = QUuid::fromString(connectionJson["in_id"].toString());
       if (newIdsMap.contains(oldId))
          connectionJson["in_id"] = newIdsMap[oldId].toString();
 
-      oldId = connectionJson["out_id"].toString();
+      oldId = QUuid::fromString(connectionJson["out_id"].toString());
       if (newIdsMap.contains(oldId))
          connectionJson["out_id"] = newIdsMap[oldId].toString();
 

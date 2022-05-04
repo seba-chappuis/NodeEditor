@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QtGui/QColor>
 
 #include "Export.hpp"
@@ -32,7 +33,7 @@ public:
 
   QColor constructionColor() const;
   QColor normalColor() const;
-  QColor normalColor(QString typeId) const;
+  QColor normalColor(const QString &typeId) const;
   QColor selectedColor() const;
   QColor selectedHaloColor() const;
   QColor hoveredColor() const;
@@ -42,6 +43,8 @@ public:
   float pointDiameter() const;
 
   bool useDataDefinedColors() const;
+
+  void associateTypeIdToColor(const QString &typeId, const QColor &color);
 
 private:
 
@@ -54,6 +57,8 @@ private:
   float LineWidth;
   float ConstructionLineWidth;
   float PointDiameter;
+
+  QHash<QString, QColor> TypeIdToColorLookup;
 
   bool UseDataDefinedColors;
 };

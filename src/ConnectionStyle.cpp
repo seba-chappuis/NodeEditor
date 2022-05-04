@@ -10,8 +10,6 @@
 
 #include <QDebug>
 
-#include <random>
-
 using QtNodes::ConnectionStyle;
 
 inline void initResources() { Q_INIT_RESOURCE(nodeeditor); }
@@ -160,22 +158,14 @@ normalColor() const
 
 QColor
 ConnectionStyle::
-normalColor(QString typeId) const
+normalColor(const QString &typeId) const
 {
-  std::size_t hash = qHash(typeId);
+  if (this->TypeIdToColorLookup.contains(typeId))
+  {
+    return this->TypeIdToColorLookup[typeId];
+  }
 
-  std::size_t const hue_range = 0xFF;
-
-  std::mt19937 gen(hash);
-  std::uniform_int_distribution<> distrib(0, hue_range);
-
-  std::size_t hue = distrib(gen);
-
-  std::size_t sat = 120 + hash % 129;
-
-  return QColor::fromHsl(hue,
-                         sat,
-                         160);
+  return QColor(128, 128, 128);
 }
 
 
@@ -232,4 +222,12 @@ ConnectionStyle::
 useDataDefinedColors() const
 {
   return UseDataDefinedColors;
+}
+
+
+void
+ConnectionStyle::
+associateTypeIdToColor(const QString &typeId, const QColor &color)
+{
+  this->TypeIdToColorLookup.insert(typeId, color);
 }

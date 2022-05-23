@@ -32,6 +32,7 @@ FlowView(QWidget *parent)
   , _deleteSelectionAction(Q_NULLPTR)
   , _scene(Q_NULLPTR)
 {
+  setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
   setDragMode(QGraphicsView::ScrollHandDrag);
   setRenderHint(QPainter::Antialiasing);
 
